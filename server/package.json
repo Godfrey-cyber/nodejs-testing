@@ -1,12 +1,13 @@
 {
   "name": "nodejs-testing",
   "version": "1.0.0",
-  "type": "module",
   "description": "this is a testing for nodejs",
   "main": "index.js",
   "scripts": {
-    "test": "npm test"
+    "test": "jest",
+    "start:dev": "nodemon index.js"
   },
+  "type": "module",
   "keywords": [
     "jest",
     "supertest"
@@ -24,6 +25,9 @@
     "nodemon": "^3.1.4"
   },
   "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4",
+    "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
     "supertest": "^7.0.0"
   }
