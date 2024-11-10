@@ -4,51 +4,22 @@ import jest from "jest"
 import request from "supertest"
 
 describe("POST /users/create-user", () => {
-	// describe("given a username & password", () => {
-	// 	test("respond with 201 statusCode", async () => {
-	// 		const response = await request(app).post("/users/create-user").send({
-	// 			username: "Godfrey",
-	// 			password: "123456"
-	// 		})
-	// 		expect(response.statusCode).toBe(201)
-	// 		expect(response.body.message).toBe('User created successfully');
-	// 	})
+	describe("given a username & password", () => {
 		test("GET USERS --> array of users", async () => {
-			const response = await request(app).get("/users/get-users").get(
-				expect(response.body).toEqual(
-					expect.arrayContaining([
-						expect.objectContaining({
-							username: expect.any(String),
-							password: expect.any(String),
-							id: expect.any(Number)
-						})
-					])
-				)
-			)
-	 		expect(response.statusCode).toBe(200)
-	 		expect('Content-Type', /json/)
+			const newUser = {
+			    name: 'John Doe',
+			    email: 'john@example.com',
+			    password: 'password123',
+			    // _id: 0
+			};
+			const response = await request(app).post("/users/create-user").send(newUser)
+
+	 		expect(response.statusCode).toBe(201)
 	 		expect(response.body.message).toBe('User created successfully');
+	 		// expect(response.body.user).toHaveProperty('_id');
+    		expect(response.body.user.email).toBe(newUser.email);
 		})
-		test("GET USERS --> array of users", () => {})
-		test("GET USERS --> array of users", () => {})
-		test("GET USERS --> array of users", () => {})
-	// 	test("Should specify constent header type", async () => {
-	// 		const response = await request(app).post("/users/create-user").send({
-	// 			username: "username",
-	// 			password: "password"
-	// 		})
-	// 	// 	expect(response.headers['Content-Type']).toEqual(expect.stringContaining('json'))
-	// 		expect('Content-Type', /json/)
-	// 	})
-	// 	test("response has userId", async () => {
-	// 		const response = await request(app).post("/users/create-user").send({
-	// 			username: "username",
-	// 			password: "password",
-	// 			userId: 0
-	// 		})
-	// 		expect(response.body.userId).toBeDefined()
-	// 	})
-	// })
+	})
 	describe("When username & password is missing", () => {
 		test("Should respond with a status code of 404", async () => {
 			const bodyData = [
@@ -62,5 +33,5 @@ describe("POST /users/create-user", () => {
 			}
 		})
 	})
-	// describe("")
+	// describe("Should create a user", () => {})
 })
