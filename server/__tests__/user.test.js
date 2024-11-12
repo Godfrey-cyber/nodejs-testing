@@ -53,20 +53,3 @@ describe("POST /users/login-user", () => {
     describe("When username & password is missing", () => {})
 })
 
-describe("POST /products/create-product", () => {
-	beforeEach(() => {
-        // Clear all instances and calls to constructor and all methods
-        jest.clearAllMocks();
-    });
-    describe("given product details", () => {})
-    describe("When img or description are missing", () => {})
-})
-
-describe("POST /payment/checkout", () => {
-	beforeEach(() => {
-        // Clear all instances and calls to constructor and all methods
-        jest.clearAllMocks();
-    });
-    describe("given all details", () => {})
-    describe("When price, name & email are missing", () => {})
-})
