@@ -3,7 +3,7 @@
 # user creation
 	- Tests all the processes of user creation, including if the user exists, encrypting and so on
 # product creation
-	-
+	- 
 	-
 	-
 # user registration
