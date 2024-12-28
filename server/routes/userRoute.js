@@ -4,4 +4,4 @@ import { registerUser } from '../controllers/users.js'
 
 router.post("/register-user", registerUser)
 
-export router
+export default router
