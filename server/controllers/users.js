@@ -71,7 +71,7 @@ export const loginUser = async(req, res) => {
     const ifPasswordIsCorrect = await bcrypt.compare(password, userExists.password)
     console.log(ifPasswordIsCorrect)
     if(!ifPasswordIsCorrect) {
-        return res.status(400).json({msg: "🚫 Wrong credentials, please try again❗"})
+        return res.status(400).json({msg: "🚫 Invalid email or password."})
     }
 
     try{
@@ -79,7 +79,7 @@ export const loginUser = async(req, res) => {
             jwt.sign({userId: userExists._id, username: userExists.username}, process.env.JWT_SECRET_TOKEN, {}, (error, token) => {
                 if (error) {
                     console.log(error)
-                    return res.status(400).json({msg: '🚫 Something wrong happenned we cannot verify you.'})
+                    return res.status(400).json({msg: '🚫 Something wrong happened we cannot verify you.'})
                 }
                 res.cookie('token', token, {
                     path: "/",
@@ -93,5 +93,15 @@ export const loginUser = async(req, res) => {
     }catch(error) {
         console.log(error)
         return res.status(500).json({msg: "Something went wrong! Please try again later"})
+    }
+}
+
+export const getUsers = async(req, res) => {
+    console.log(req.query.username)
+    try{
+        const users = req.query.new ? await User.find().sort({ createdAt: -1} ).limit(5).select("-password") : await User.find().select("-password")
+        return res.status(200).json({ users, status: 'Success', count: users.length })
+    } catch(error) {
+        return res.status(500).json({ status: 'Fail', msg: error.message })
     }
 }
