@@ -13,8 +13,8 @@ export const registerUser = async (req, res) => {
         }
 
         // Email validation
-        validateEmail(email, res) // Ensures that email is a valid one
-        validatePassword(password, res) // pasword meets the criteria
+        validateEmail(email) // Ensures that email is a valid one
+        validatePassword(password) // pasword meets the criteria
 
         // existing user
         const existingUser = await User.findOne({ email });
@@ -23,6 +23,7 @@ export const registerUser = async (req, res) => {
         //Create user
         const user = new User({ username, email, password });
         await user.save()
+        console.log(user)
 
         // Generate tokens
         const accessToken = createAccessToken(user._id);
@@ -51,32 +52,46 @@ export const loginUser = async(req, res) => {
             return res.status(400).json({msg: '❌ Please fill in all fields'})
         }
 
-        validateEmail(email, res) // Ensures that email is a valid one
-        validatePassword(password, res) // pasword meets the criteria
+        // Validate password format
+        try {
+            validatePassword(password);
+        } catch (error) {
+            return res.status(400).json({ msg: error.message });
+        }
+
+        // Validate email format
+        try {
+            validateEmail(email);
+        } catch (error) {
+            return res.status(400).json({ msg: error.message });
+        }
 
         // check if user exists
         const userExists = await User.findOne({ email })
         if (!userExists) return res.status(400).json({msg: "🚫 This email does not exist!"})
-
+       
         const ifPasswordIsCorrect = await bcrypt.compare(password, userExists.password)
-        console.log(ifPasswordIsCorrect)
-        if(!ifPasswordIsCorrect) return res.status(400).json({msg: "🚫 Invalid email or password."})
+        console.log("password correct", ifPasswordIsCorrect)
+        if (!ifPasswordIsCorrect) {
+            return res.status(400).json({ msg: "🚫 Invalid email or password." });
+        }
+        console.log("userExists", userExists)
 
         // Generate tokens
         const accessToken = createAccessToken(userExists._id);
         const refreshToken = createRefreshToken(userExists._id);
-        if (userExists && ifPasswordIsCorrect) {
-            res.cookie('refreshToken', refreshToken, {
-                path: "/",
-                httpOnly: true,
-                // maxAge: new Date(Date.now() + 1000 * 86400),
-                sameSite: "none",
-                secure: process.env.NODE_ENV === 'production'
-            })
-            res.status(200).json({ accessToken, msg: "Login successfull🥇" })
-        }
+
+        // Send refresh token to the front-end
+        res.cookie('refreshToken', refreshToken, {
+            path: "/",
+            httpOnly: true,
+            // maxAge: new Date(Date.now() + 1000 * 86400),
+            sameSite: "none",
+            secure: process.env.NODE_ENV === 'production'
+        })
+        res.status(200).json({ accessToken, msg: "Login successfull🥇" })
     }catch(error) {
-        console.log(error)
+        console.log(error.message)
         return res.status(500).json({ message: error.message })
     }
 }
@@ -101,4 +116,43 @@ export const tokenRefresh = (req, res) => {
         const accessToken = createAccessToken(decoded.userId);
         res.status(200).json({ accessToken });
     });
+}
+
+// Change Password 
+export const changePassword = async(req, res) => {
+    try {
+        const { previousPassword, password } = req.body;
+        // Validate user fields
+        if (!previousPassword || !password) return res.status(400).json({ message: "❌ Please enter all fields." });
+        // Fetch user from the database
+        const user = await User.findById(req.userId);
+
+        if (!user) return res.status(401).json({ message: "❌ User not found. Please log in again." });
+        // Check if the previous password matches the user's current password
+        const isPasswordMatch = await bcrypt.compare(previousPassword, user.password);
+        console.log("is password match", isPasswordMatch)
+        if (!isPasswordMatch) {
+            throw new Error("🚫 Incorrect previous password. Please try again.");
+        }
+
+        try {
+            validatePassword(password); // Throws an error if validation fails
+        } catch (validationError) {
+            return res.status(400).json({ message: validationError.message });
+        }
+
+        // Update and save the new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        console.log("user.pasword", user.password)
+        console.log("pasword", password)
+
+        user.password = hashedPassword;
+        await user.save();
+        console.log(user)
+
+        res.status(200).json({ message: "✅ Password has been changed successfully!" });
+    } catch(error) {
+        res.status(500).json({ message: error.message });
+    }
 }
