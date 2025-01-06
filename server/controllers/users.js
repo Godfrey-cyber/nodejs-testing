@@ -12,9 +12,19 @@ export const registerUser = async (req, res) => {
             return res.status(400).json({ msg: '❌ Please enter all fields' })
         }
 
-        // Email validation
-        validateEmail(email) // Ensures that email is a valid one
-        validatePassword(password) // pasword meets the criteria
+         // Validate password format
+        try {
+            validatePassword(password);
+        } catch (error) {
+            return res.status(400).json({ msg: error.message });
+        }
+
+        // Validate email format
+        try {
+            validateEmail(email);
+        } catch (error) {
+            return res.status(400).json({ msg: error.message });
+        }
 
         // existing user
         const existingUser = await User.findOne({ email });
@@ -23,24 +33,11 @@ export const registerUser = async (req, res) => {
         //Create user
         const user = new User({ username, email, password });
         await user.save()
-        console.log(user)
-
-        // Generate tokens
-        const accessToken = createAccessToken(user._id);
-        const refreshToken = createRefreshToken(user._id);
-
-        // send refreshtoken via httpOnly cookie
-        res.cookie('refreshToken', refreshToken, {
-            path: '/',
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            sameSite: "none",
-            secure: process.env.NODE_ENV === 'production'
-        })
-        res.status(201).json({ accessToken, msg: "User Registration successfull🥇"})
+        console.log("new registered user", user)
+        return res.status(201).json({ msg: "User Registration successfull🥇" })
     } catch(error) {
         console.log(error)
-        return res.status(500).json({ message: error.message })
+        res.status(500).json({ message: error.message })
     }
 }
 
@@ -68,14 +65,15 @@ export const loginUser = async(req, res) => {
 
         // check if user exists
         const userExists = await User.findOne({ email })
-        if (!userExists) return res.status(400).json({msg: "🚫 This email does not exist!"})
+        if (!userExists) {
+            return res.status(400).json({msg: "🚫 This email does not exist!"})
+        }
        
         const ifPasswordIsCorrect = await bcrypt.compare(password, userExists.password)
         console.log("password correct", ifPasswordIsCorrect)
         if (!ifPasswordIsCorrect) {
             return res.status(400).json({ msg: "🚫 Invalid email or password." });
         }
-        console.log("userExists", userExists)
 
         // Generate tokens
         const accessToken = createAccessToken(userExists._id);
@@ -85,8 +83,8 @@ export const loginUser = async(req, res) => {
         res.cookie('refreshToken', refreshToken, {
             path: "/",
             httpOnly: true,
-            // maxAge: new Date(Date.now() + 1000 * 86400),
-            sameSite: "none",
+            maxAge: new Date(Date.now() + 1000 * 86400),
+            sameSite: "Strict",
             secure: process.env.NODE_ENV === 'production'
         })
         res.status(200).json({ accessToken, msg: "Login successfull🥇" })
@@ -124,6 +122,12 @@ export const changePassword = async(req, res) => {
         const { previousPassword, password } = req.body;
         // Validate user fields
         if (!previousPassword || !password) return res.status(400).json({ message: "❌ Please enter all fields." });
+        // Validate password format
+        try {
+            validatePassword(password);
+        } catch (error) {
+            return res.status(400).json({ msg: error.message });
+        }
         // Fetch user from the database
         const user = await User.findById(req.userId);
 
@@ -131,6 +135,7 @@ export const changePassword = async(req, res) => {
         // Check if the previous password matches the user's current password
         const isPasswordMatch = await bcrypt.compare(previousPassword, user.password);
         console.log("is password match", isPasswordMatch)
+
         if (!isPasswordMatch) {
             throw new Error("🚫 Incorrect previous password. Please try again.");
         }
@@ -142,17 +147,24 @@ export const changePassword = async(req, res) => {
         }
 
         // Update and save the new password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        console.log("user.pasword", user.password)
-        console.log("pasword", password)
-
-        user.password = hashedPassword;
+        user.password = password;
         await user.save();
-        console.log(user)
+        console.log("change password", user)
 
         res.status(200).json({ message: "✅ Password has been changed successfully!" });
     } catch(error) {
         res.status(500).json({ message: error.message });
     }
+}
+
+// Logout 
+export const logout = async(req, res) => {
+    res.cookie('refreshToken', "", {
+        path: "/",
+        httpOnly: true,
+        expires: new Date(0),
+        sameSite: "Strict",
+        secure: true
+    })
+    return res.status(200).json({message: "User has been successfully logged out"})
 }
